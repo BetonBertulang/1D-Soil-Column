@@ -4,6 +4,7 @@ import pandas as pd
 import openseespy.opensees as ops
 import os
 from math import ceil, pi
+from pathlib import Path
 
 # PARAMETERS CLASSES
 class BaseParams:
@@ -94,4 +95,37 @@ class AnalysisParams(BaseParams):
         omega2 = 2 * pi * 20
         self.a0 = 2 * self.damp * omega1 * omega2 / (omega1 + omega2)
         self.a1 = 2 * self.damp / (omega1 + omega2)
+
+class ParametricStudy:
+    '''The main engine for parametric study.'''
+    def __init__(self, study_name = "Parametric_Study"):
+        self.study_name  = study_name
+        self.result_dir = Path(f'Results_{study_name}')
+        self.result_dir.mkdir(exist_ok=True)
+        self.results = []
+        self.study_log = []
+
+    def define_parameter_range(self):
+        '''Define the parameter ranges for the study here.'''
+        self.param_ranges = {
+            'ground_motion' : ['velocityHistory.out']
+        }
+    
+    def prepare_ground_motion_files(self):
+        '''Checks for ground motion files and exit if ground motion not found'''
+        print('Checking Ground Motion...')
+        self.motion_info = {}
+        
+        motion_files = self.param_ranges['ground_motion']
+
+        for motion_file in motion_files:
+            path = Path(motion_file)
+            if not path.exists():
+                print(f'Motion file {motion_file} not found.')
+                break
+            else:
+                motion_data = np.loadtxt(path)
+                self.motion_info[motion_file] = {'length' : len(motion_data)}
+                print(f"Found '{motion_file}' with {len(motion_data)} points.")
+
 
